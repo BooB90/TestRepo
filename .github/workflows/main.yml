@@ -1,0 +1,10 @@
+name: Primul meu workflow
+
+on: [push]
+
+jobs:
+  salut:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Afiseaza un mesaj
+        run: echo "Workflow-ul a rulat cu succes!"
