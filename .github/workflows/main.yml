@@ -1,10 +1,23 @@
-name: Primul meu workflow
+name: Generare imagine kie.ai
 
-on: [push]
+on:
+  workflow_dispatch:
 
 jobs:
-  salut:
+  genereaza-imagine:
     runs-on: ubuntu-latest
     steps:
-      - name: Afiseaza un mesaj
-        run: echo "Workflow-ul a rulat cu succes!"
+      - name: Trimite cerere catre kie.ai
+        run: |
+          curl --location 'https://api.kie.ai/api/v1/jobs/createTask' \
+          --header 'Authorization: Bearer ${{ secrets.KIE_API_TOKEN }}' \
+          --header 'Content-Type: application/json' \
+          --data '{
+            "model": "z-image",
+            "callBackUrl": "https://n8n.aidaai.uk/webhook/3a06f7b0-6fbe-4f3e-af2d-935cad5c486c",
+            "input": {
+              "prompt": "Generate a photorealistic image of a cafe terrace in the Marais district of Paris on a Wednesday morning in March 2025. It is a crisp, cool spring morning with clear skies. Locals are drinking coffee. In sharp focus should be a young woman with a pixie cut wearing a scarf, stirring a cappuccino and looking thoughtfully to the side; the waiter and street traffic behind her are blurred. The photo should have the candid, natural morning light feel of an iPhone image.",
+              "aspect_ratio": "1:1",
+              "nsfw_checker": true
+            }
+          }'
