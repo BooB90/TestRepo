@@ -1,26 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount, useBalance } from 'wagmi'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Shield, 
   Search, 
   Copy, 
   Terminal, 
   ArrowRight, 
-  Wallet, 
   Check, 
   Loader2, 
   Globe, 
   Cpu, 
   Coins, 
-  TrendingUp, 
   X, 
   Activity, 
   Code, 
   AlertTriangle, 
   Layers, 
   ExternalLink,
-  DollarSign,
-  SearchIcon,
-  Play
+  Play,
+  FileJson,
+  Download,
+  CheckCircle2,
+  Lock,
+  SearchCode
 } from 'lucide-react'
 
 // Mock services dataset
@@ -34,34 +39,31 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/solana-risk',
     status: 'Live',
     category: 'Security',
+    riskScore: 12, // Low Risk
+    riskLevel: 'Safe',
+    riskColor: 'text-emerald-400',
+    insights: `### Solana Risk Scanner Report
+
+#### Executive Summary
+The target mint address has been fully audited against active Solana security vector patterns. No critical vulnerabilities or hidden freeze authorities were discovered.
+
+#### Core Findings
+* **Freeze Authority**: **Disabled** (The creator cannot freeze user accounts).
+* **Mint Authority**: **Disabled** (Supply is hard-capped and cannot be inflated).
+* **Liquidity Pool Burn**: **100% Burned** (Initial LP tokens have been routed to the incinerator address).
+* **Top 10 Holders**: **14.2% ownership** (Extremely decentralized allocation).
+
+#### Recommendation
+**EXCELLENT_LQP**: No suspicious owner actions or honeypot threats detected. Proceed with confidence.`,
     curlCommand: (token, address) => `curl -X POST "https://api.querygate.com/v1/agents/solana-risk" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"mintAddress": "${address || '6bU9Y7B1...s9f2'}"}'`,
-    logs: (address) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 300, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 600, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 900, text: 'TX: Initiating x402 micro-transaction: 0.002 USDC...' },
-      { t: 1200, text: 'TX: Micropayment confirmed! [TxID: x402_solrisk_88e4f21a]' },
-      { t: 1400, text: 'PROTOCOL: Take-rate fee (2.5%): 0.00005 USDC routed to Querygate Fee Pool.' },
-      { t: 1600, text: 'SERVICE: Resolving agent endpoint: Solana Risk Scanner v2.1' },
-      { t: 1900, text: `ANALYSIS: Fetching target contract [${address || '6bU9Y7B1...s9f2'}]...` },
-      { t: 2200, text: 'ANALYSIS: Checking authorities... Mint Authority: DISABLED | Freeze Authority: DISABLED' },
-      { t: 2500, text: 'ANALYSIS: Scanning Raydium LP burn metadata... 100% of initial LP tokens burned.' },
-      { t: 2800, text: 'RESPONSE: Query executed successfully in 2.8s.' },
-      { t: 2900, text: 'DATA:', isJson: true, data: {
-        status: "safe",
-        score: 98,
-        contract: address || "6bU9Y7B1t...s9f2",
-        details: {
-          mintAuthority: "Disabled",
-          freezeAuthority: "Disabled",
-          lpTokensBurned: "100.00%",
-          top10HoldersRatio: "14.2%"
-        },
-        recommendation: "EXCELLENT_LQP"
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_solrisk_88e4f21a].",
+      "Initializing Agentic Service... Solana Risk Scanner Agent v2.1 activated.",
+      "Fetching blockchain state... Fetching Raydium CLMM pool and Metaplex metadata.",
+      "Executing LLM deep analysis... Verifying owner authority signatures, freeze authority, and top 10 distribution."
     ]
   },
   {
@@ -73,32 +75,31 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/sentiment-llm',
     status: 'Live',
     category: 'AI Agents',
+    riskScore: 35, // Low-Medium Risk
+    riskLevel: 'Moderate',
+    riskColor: 'text-yellow-400',
+    insights: `### AI Token Sentiment Analysis
+
+#### Executive Summary
+Social volumes and on-chain trading actions indicate heavily bullish organic positioning with minimal coordinated sybil actions.
+
+#### Core Findings
+* **Social Velocity**: **+184%** (Extremely high growth on X and Telegram).
+* **Smart Money Wallets**: **+14 Wallets net positive** (On-chain tracking indicates active accumulation).
+* **Coordinated Hype Index**: **12%** (Very low, suggesting organic viral momentum rather than temporary bot farming).
+* **Key Keywords**: *Breakout, Layer-1, Liquidity, Expansion*.
+
+#### Recommendation
+**BULLISH**: Strong community-driven backing and organic trader demand detected. Momentum likely to persist in the near-term.`,
     curlCommand: (token, symbol) => `curl -X POST "https://api.querygate.com/v1/agents/sentiment-llm" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"symbol": "${symbol || 'SOL'}"}'`,
-    logs: (symbol) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 200, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 500, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 800, text: 'TX: Initiating x402 micro-transaction: 0.005 USDC...' },
-      { t: 1100, text: 'TX: Micropayment confirmed! [TxID: x402_sentllm_9a82f1b4]' },
-      { t: 1300, text: 'PROTOCOL: Take-rate fee (2.5%): 0.000125 USDC routed to Querygate Fee Pool.' },
-      { t: 1500, text: `SERVICE: Dispatching query to Sentiment LLM agent [Query: ${symbol || 'SOL'}]...` },
-      { t: 1800, text: 'NLP_AGENT: Aggregating last 500 tweets, telegram signals, and news tickers...' },
-      { t: 2100, text: 'NLP_AGENT: Performing semantic weights extraction & token classification...' },
-      { t: 2400, text: 'RESPONSE: Analysis complete.' },
-      { t: 2500, text: 'DATA:', isJson: true, data: {
-        ticker: symbol || "SOL",
-        sentimentScore: 0.84,
-        vibe: "Bullish",
-        metrics: {
-          socialVolume24h: 18450,
-          bullishRatio: "76.4%",
-          topKeywords: ["breakout", "ecosystem", "layer-1", "jupiter"]
-        },
-        agentSummary: "Strong positive momentum detected in organic community circles, backed by on-chain smart wallet accumulations."
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_sentllm_9a82f1b4].",
+      "Initializing Agentic Service... Sentiment LLM Core active.",
+      "Fetching blockchain state... Aggregating last 500 Twitter API signals and Telegram channel feeds.",
+      "Executing LLM deep analysis... Extracting semantic weights and intent classification."
     ]
   },
   {
@@ -110,34 +111,31 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/liquidity-check',
     status: 'Live',
     category: 'DeFi Data',
+    riskScore: 8, // Safe
+    riskLevel: 'Very Safe',
+    riskColor: 'text-emerald-400',
+    insights: `### On-Chain Liquidity & Slippage Forecast
+
+#### Executive Summary
+Aggregated liquidity pools across top decentralized exchanges (Raydium, Orca, Meteora) show extremely deep orderbooks capable of absorbing mid-to-large size trades.
+
+#### Core Findings
+* **Aggregate Liquidity**: **$84.92M USD** locked inside core pools.
+* **$10k Buy Impact**: **0.08% slippage** (Extremely shallow impact).
+* **$50k Buy Impact**: **0.34% slippage** (Highly optimized routing is advised).
+* **Top Routing Venues**: Raydium CLMM (54%), Orca Whirlpools (36%).
+
+#### Recommendation
+**VERY_SAFE**: Extremely deep liquidity depth. Simple routing handles trades up to $25k with negligible price slippage.`,
     curlCommand: (token, pair) => `curl -X POST "https://api.querygate.com/v1/agents/liquidity-check" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"pair": "${pair || 'SOL-USDC'}"}'`,
-    logs: (pair) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 200, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 400, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 600, text: 'TX: Initiating x402 micro-transaction: 0.001 USDC...' },
-      { t: 800, text: 'TX: Micropayment confirmed! [TxID: x402_liqcheck_cf918a22]' },
-      { t: 1000, text: 'PROTOCOL: Take-rate fee (2.5%): 0.000025 USDC routed to Querygate Fee Pool.' },
-      { t: 1200, text: `SERVICE: Initializing pool lookup for pair [${pair || 'SOL-USDC'}]...` },
-      { t: 1400, text: 'INDEXER: Fetching live price feeds from Orca, Raydium, and Meteora pools...' },
-      { t: 1600, text: 'CALCULATING: Simulation run: $50k buy impact...' },
-      { t: 1800, text: 'RESPONSE: Calculation finished.' },
-      { t: 1900, text: 'DATA:', isJson: true, data: {
-        pair: pair || "SOL-USDC",
-        aggregateLiquidityUSD: 84920000,
-        slippageEstimate: {
-          buy1000USD: "0.01%",
-          buy10000USD: "0.08%",
-          buy50000USD: "0.34%"
-        },
-        primeVenues: [
-          { venue: "Raydium CLMM", share: "54%" },
-          { venue: "Orca Whirlpools", share: "36%" }
-        ]
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_liqcheck_cf918a22].",
+      "Initializing Agentic Service... On-Chain Indexer agent online.",
+      "Fetching blockchain state... Fetching pool reserves across Raydium, Orca, and Meteora.",
+      "Executing LLM deep analysis... Running orderbook aggregation and price impact calculations."
     ]
   },
   {
@@ -149,27 +147,31 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/mev-sandwich',
     status: 'Live',
     category: 'DeFi Data',
+    riskScore: 78, // High Risk
+    riskLevel: 'High Risk',
+    riskColor: 'text-red-500',
+    insights: `### MEV Sandwich Attack Estimator
+
+#### Executive Summary
+Warning: High MEV sandwich attack probability detected on public mempool routing with standard slippage parameters.
+
+#### Core Findings
+* **Slippage Threshold**: **1.0%** (Extremely high, open to sandwich exploitation).
+* **Pending Mempool Blocks**: **3 Active searcher bundles** matching the gas signature.
+* **Estimated Attack Loss**: **$42.50 USD** (Based on $2,000 swap sizing).
+* **Jito Block Builder Sorter**: Active (Searchers can package frontrun and backrun bundles).
+
+#### Recommendation
+**HIGH_RISK**: Do not broadcast transaction to public RPC nodes. Reduce slippage threshold to **0.25%** or route via a private RPC endpoint (e.g., flashbots/Jito).`,
     curlCommand: (token, tx) => `curl -X POST "https://api.querygate.com/v1/agents/mev-sandwich" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"estimatedGas": 150000, "slippageLimit": 1.0}'`,
-    logs: (tx) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 200, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 500, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 800, text: 'TX: Initiating x402 micro-transaction: 0.003 USDC...' },
-      { t: 1100, text: 'TX: Micropayment confirmed! [TxID: x402_mevsand_ee419ab2]' },
-      { t: 1300, text: 'PROTOCOL: Take-rate fee (2.5%): 0.000075 USDC routed to Querygate Fee Pool.' },
-      { t: 1500, text: 'SERVICE: Processing gas and slippage vectors against active block builders...' },
-      { t: 1800, text: 'SIMULATION: Simulating block builder sorting algorithms (Jito & flashbots)...' },
-      { t: 2100, text: 'RESPONSE: Completed sandwich attack risk check.' },
-      { t: 2200, text: 'DATA:', isJson: true, data: {
-        attackProbability: "Medium-High",
-        riskScore: 72,
-        estimatedLossUSD: 42.50,
-        safestSlippageThreshold: "0.25%",
-        recommendation: "Submit via private RPC / flashbots bundle."
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_mevsand_ee419ab2].",
+      "Initializing Agentic Service... Mempool Monitor active.",
+      "Fetching blockchain state... Analyzing pending tx state and block builder bundles.",
+      "Executing LLM deep analysis... Running sandwich attack simulation against block builder sort algorithms."
     ]
   },
   {
@@ -181,31 +183,31 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/deepseek-auditor',
     status: 'Live',
     category: 'AI Agents',
+    riskScore: 48, // Moderate Risk
+    riskLevel: 'Moderate',
+    riskColor: 'text-yellow-400',
+    insights: `### DeepSeek-V3 Smart Contract Audit
+
+#### Executive Summary
+Vulnerability scan finished. No critical reentrancy or ownership capture vulnerabilities were identified, but 1 High and 3 Medium issues require immediate developer attention.
+
+#### Core Findings
+* **Reentrancy Vectors**: **None** (Modifiers are properly ordered and lock checks are present).
+* **Unchecked External Call**: **1 High Vulnerability** (Line 42 contains raw address call without check).
+* **Gas Optimizations**: **Medium Severity** (Consolidate state variables to save ~22,000 gas units per write).
+* **Access Control**: **Safe** (OnlyOwner limits are properly enforced).
+
+#### Recommendation
+**MODERATE**: Do not deploy contract directly to Mainnet. Modify Line 42 to use OpenZeppelin SafeERC20 / address check before mainnet launch.`,
     curlCommand: (token, contract) => `curl -X POST "https://api.querygate.com/v1/agents/deepseek-auditor" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"sourceCode": "contract MyToken { ... }"}'`,
-    logs: (contract) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 200, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 500, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 800, text: 'TX: Initiating x402 micro-transaction: 0.010 USDC...' },
-      { t: 1100, text: 'TX: Micropayment confirmed! [TxID: x402_deepseek_aa88e1c3]' },
-      { t: 1300, text: 'PROTOCOL: Take-rate fee (2.5%): 0.00025 USDC routed to Querygate Fee Pool.' },
-      { t: 1500, text: 'SERVICE: Feeding source code buffer into DeepSeek-V3 fine-tuned parameters...' },
-      { t: 1900, text: 'LLM: Analyzing AST (Abstract Syntax Tree), checking reentrancy and integer overflow vectors...' },
-      { t: 2300, text: 'LLM: Checking access control ownership modifiers...' },
-      { t: 2600, text: 'RESPONSE: Code evaluation successfully completed.' },
-      { t: 2700, text: 'DATA:', isJson: true, data: {
-        contractValid: true,
-        criticalVulnerabilities: 0,
-        highVulnerabilities: 1,
-        mediumVulnerabilities: 3,
-        details: [
-          { type: "Unchecked External Call", location: "line 42", mitigation: "Use transfer() or openzeppelin Address library" }
-        ],
-        gasOptimizationTips: "Consolidate state variable storage inside writePoolState (save ~22,000 gas)."
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_deepseek_aa88e1c3].",
+      "Initializing Agentic Service... DeepSeek Auditor Model active.",
+      "Fetching blockchain state... Fetching contract AST and dependency files.",
+      "Executing LLM deep analysis... Reviewing call vectors, reentrancy vulnerabilities, and gas storage arrays."
     ]
   },
   {
@@ -217,85 +219,96 @@ const SERVICES = [
     endpoint: 'https://api.querygate.com/v1/agents/nft-metadata-guard',
     status: 'Live',
     category: 'Security',
+    riskScore: 5, // Safe
+    riskLevel: 'Very Safe',
+    riskColor: 'text-emerald-400',
+    insights: `### NFT Metadata Integrity Audit
+
+#### Executive Summary
+Verification of metadata fields, image hashes, and decentralized IPFS pinning permanence has successfully passed all consensus checks.
+
+#### Core Findings
+* **IPFS Pinned Providers**: **Pinata, Infura** (Well redundant).
+* **Metadata Hash Match**: **100% Match** (Local hash matches decentralized storage registry).
+* **Attributes Consistency**: **Passed** (No mismatched traits or dangling assets).
+* **Image Availability**: **Passed** (Sub-100ms fetch delay).
+
+#### Recommendation
+**VERY_SAFE**: Extremely durable NFT deployment. Metadata is fully standardized and safely secured.`,
     curlCommand: (token, tokenId) => `curl -X POST "https://api.querygate.com/v1/agents/nft-metadata-guard" \\
   -H "Authorization: x402 ${token || 'YOUR_PAYMENT_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{"nftAddress": "0xbc4ca...5467", "tokenId": 1}'`,
-    logs: (tokenId) => [
-      { t: 0, text: 'INIT: Connecting to x402 decentralized payment processor...' },
-      { t: 100, text: 'AUTH: Checking client balance in connected wallet...' },
-      { t: 300, text: 'AUTH: Wallet authorized. Sufficient USDC balance found.' },
-      { t: 500, text: 'TX: Initiating x402 micro-transaction: 0.001 USDC...' },
-      { t: 700, text: 'TX: Micropayment confirmed! [TxID: x402_nftguard_31a988d1]' },
-      { t: 900, text: 'PROTOCOL: Take-rate fee (2.5%): 0.000025 USDC routed to Querygate Fee Pool.' },
-      { t: 1100, text: 'SERVICE: Fetching NFT token metadata URI from on-chain state...' },
-      { t: 1400, text: 'NETWORK: Resolving IPFS gateway latency & pinning check...' },
-      { t: 1700, text: 'RESPONSE: Metadata validation complete.' },
-      { t: 1800, text: 'DATA:', isJson: true, data: {
-        metadataURI: "ipfs://QmeSjSinHp...607",
-        metadataValid: true,
-        ipfsPinningProviders: ["Pinata", "Infura"],
-        attributesCount: 7,
-        imageIntegrity: "Passed"
-      }}
+    logs: [
+      "Validating x402 payment header... Handshake confirmed [TxID: x402_nftguard_31a988d1].",
+      "Initializing Agentic Service... NFT Metadata Inspector active.",
+      "Fetching blockchain state... Fetching token URI from smart contract on-chain state.",
+      "Executing LLM deep analysis... Resolving decentralized IPFS gateway latency and metadata hashing."
     ]
   }
 ]
 
 export default function App() {
+  const { isConnected, address } = useAccount()
+  const { data: balanceData } = useBalance({ address })
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedService, setSelectedService] = useState(SERVICES[0])
-  const [walletConnected, setWalletConnected] = useState(false)
-  const [walletAddress, setWalletAddress] = useState('')
-  const [walletModalOpen, setWalletModalOpen] = useState(false)
-  const [walletBalance, setWalletBalance] = useState(5.0000) // Simulated USD balance
   const [copiedTextId, setCopiedTextId] = useState(null)
-  
-  // Terminal state
-  const [terminalLogs, setTerminalLogs] = useState([
-    { text: 'SYSTEM: Welcome to Querygate CLI. Select any agentic micro-service and click "Run" to process an live micro-payment query.', type: 'sys' }
-  ])
-  const [isRunning, setIsRunning] = useState(false)
-  const [runningServiceId, setRunningServiceId] = useState(null)
-  const terminalEndRef = useRef(null)
-
-  // Custom User Payment Token simulator
   const [userPaymentToken, setUserPaymentToken] = useState('x402_sk_live_7a3d90f2b841')
 
-  // Auto scroll terminal logs
+  // Real-time stream & results console log states
+  const [terminalLogs, setTerminalLogs] = useState([])
+  const [logIndex, setLogIndex] = useState(-1)
+  const [showProcessView, setShowProcessView] = useState(false)
+  const [showResultsDashboard, setShowResultsDashboard] = useState(false)
+
+  // Auto-scroll terminal
+  const terminalEndRef = useRef(null)
   useEffect(() => {
     if (terminalEndRef.current) {
       terminalEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [terminalLogs])
 
-  const connectWallet = (walletType) => {
-    setWalletModalOpen(false)
-    setWalletConnected(true)
-    const randomAddress = walletType === 'phantom' 
-      ? 'F8a9S5Yt8x...ZqP4' 
-      : walletType === 'metamask' 
-      ? '0x7A3d...E85f' 
-      : '0x9E2b...2B8c'
-    setWalletAddress(randomAddress)
-    
-    // Add logs to console
-    setTerminalLogs(prev => [
-      ...prev,
-      { text: `WALLET: Connected to ${walletType === 'phantom' ? 'Phantom Wallet' : walletType === 'metamask' ? 'MetaMask' : 'WalletConnect'} (${randomAddress})`, type: 'info' },
-      { text: `WALLET: Synced with x402 payment protocol. Active balance: $5.0000 USDC`, type: 'info' }
-    ])
-  }
+  // TanStack Query Mutation handling the query request flow
+  const runMutation = useMutation({
+    mutationFn: async (service) => {
+      // Simulate real-time API latency
+      await new Promise((resolve) => setTimeout(resolve, 3200))
+      return service
+    },
+    onMutate: (service) => {
+      // Setup and open the "Process View" overlay immediately on click
+      setShowProcessView(true)
+      setShowResultsDashboard(false)
+      setTerminalLogs([])
+      setLogIndex(0)
+    },
+    onSuccess: (service) => {
+      // Delay transition slightly for terminal slide animation to look organic
+      setTimeout(() => {
+        setShowResultsDashboard(true)
+      }, 500)
+    }
+  })
 
-  const disconnectWallet = () => {
-    setWalletConnected(false)
-    setWalletAddress('')
-    setTerminalLogs(prev => [
-      ...prev,
-      { text: 'WALLET: Client wallet disconnected.', type: 'warning' }
-    ])
-  }
+  // Stream console logs step by step during mutation
+  useEffect(() => {
+    if (!showProcessView || runMutation.isPending === false) return
+
+    const service = runMutation.variables
+    if (!service) return
+
+    if (logIndex >= 0 && logIndex < service.logs.length) {
+      const timer = setTimeout(() => {
+        setTerminalLogs(prev => [...prev, service.logs[logIndex]])
+        setLogIndex(prev => prev + 1)
+      }, 700) // stream a log every 700ms
+      return () => clearTimeout(timer)
+    }
+  }, [logIndex, showProcessView, runMutation.isPending])
 
   const handleCopyEndpoint = (text, id) => {
     navigator.clipboard.writeText(text)
@@ -305,62 +318,23 @@ export default function App() {
     }, 2000)
   }
 
-  // Trigger terminal execution simulation
-  const runServiceQuery = (service) => {
-    if (isRunning) return
-    setIsRunning(true)
-    setRunningServiceId(service.id)
-    setSelectedService(service) // sync with curl code block too
-    
-    // Clear terminal and prepare
-    setTerminalLogs([
-      { text: `CLIENT: Triggering query to "${service.name}"...`, type: 'cmd' },
-    ])
-
-    const logList = service.logs(searchQuery && searchQuery.startsWith('0x') ? searchQuery : '')
-    
-    // Run simulated logs sequence
-    logList.forEach((log) => {
-      setTimeout(() => {
-        setTerminalLogs(prev => [
-          ...prev,
-          { 
-            text: log.text, 
-            type: log.text.startsWith('TX:') ? 'tx' : log.text.startsWith('RESPONSE:') ? 'success' : 'log',
-            isJson: log.isJson,
-            data: log.data
-          }
-        ])
-
-        // If it's the last log, stop running and subtract micropayment balance
-        if (log === logList[logList.length - 1]) {
-          setIsRunning(false)
-          setRunningServiceId(null)
-          // Subtract cost from wallet balance
-          setWalletBalance(prev => Math.max(0, prev - service.costNum))
-        }
-      }, log.t)
-    })
-  }
-
   // Filter services by search query and category
   const filteredServices = SERVICES.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           service.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (searchQuery.startsWith('0x') && searchQuery.length > 5) // matching custom address mode
+                          (searchQuery.startsWith('0x') && searchQuery.length > 5)
     
     const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  // Extract unique categories for filter tabs
   const categories = ['All', 'Security', 'DeFi Data', 'AI Agents']
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] text-[#F3F4F6] selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[#0B0B0B] text-[#F3F4F6] selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
       
-      {/* Glow Effects at Header background */}
+      {/* Glow Effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-cyan-950/20 to-transparent blur-[120px] pointer-events-none -z-10" />
 
       {/* HEADER SECTION */}
@@ -380,14 +354,14 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center stats */}
-          <div className="hidden md:flex items-center gap-6 text-xs text-gray-400 border-l border-white/10 pl-6">
+          {/* Stats Bar */}
+          <div className="hidden lg:flex items-center gap-6 text-xs text-gray-400 border-l border-white/10 pl-6">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400"></span>
               </span>
-              <span className="text-gray-300">Protocol: <strong className="text-white">Active</strong></span>
+              <span className="text-gray-300">Protocol Status: <strong className="text-white">Active</strong></span>
             </div>
             <div>
               Global MQV: <strong className="text-white tech-font">4.2M+ queries</strong>
@@ -397,52 +371,25 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Action buttons */}
+          {/* Wallet integration using the official RainbowKit ConnectButton component */}
           <div className="flex items-center gap-4">
-            
-            {walletConnected && (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs">
-                <span className="text-gray-400">USDC Balance:</span>
-                <span className="text-cyan-400 font-semibold tech-font">${walletBalance.toFixed(4)}</span>
-              </div>
-            )}
-
-            {walletConnected ? (
-              <div className="relative group">
-                <button 
-                  onClick={disconnectWallet}
-                  className="flex items-center gap-2 bg-[#121212] hover:bg-red-950/20 text-[#f3f4f6] hover:text-red-400 border border-white/10 hover:border-red-900/50 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse group-hover:bg-red-500" />
-                  <span className="tech-font">{walletAddress}</span>
-                  <span className="text-[10px] text-gray-500 group-hover:text-red-400 pl-1 border-l border-white/10 ml-1">Disconnect</span>
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setWalletModalOpen(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black px-4.5 py-2 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-[0_0_20px_rgba(0,229,255,0.2)] hover:shadow-[0_0_25px_rgba(0,229,255,0.4)]"
-              >
-                <Wallet size={14} />
-                Connect Wallet
-              </button>
-            )}
+            <ConnectButton />
           </div>
         </div>
       </header>
 
-      {/* MAIN HERO SECTION */}
-      <main className="max-w-7xl mx-auto px-6 py-12 md:py-20">
+      {/* MAIN LAYOUT */}
+      <main className="max-w-7xl mx-auto px-6 py-12 md:py-16">
         
-        {/* Banner Announcement */}
+        {/* Banner */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-800/30 text-xs text-cyan-400 font-medium">
             <span className="text-[10px] bg-cyan-400 text-black px-1.5 py-0.5 rounded font-extrabold uppercase">NEW</span>
-            <span>x402 Spec Revision 1.4 live on Solana & Arbitrum</span>
+            <span>x402 Spec Revision 1.4 live on Ethereum & Arbitrum</span>
           </div>
         </div>
 
-        {/* Value Prop */}
+        {/* Hero */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-6 leading-tight">
             High-Velocity AI Services. <br />
@@ -454,7 +401,7 @@ export default function App() {
             Buy and sell highly granular, autonomous API agent queries instantly using the ultra-low friction <strong className="text-gray-200">x402 protocol</strong>. No subscription overheads. Pay-per-query processed automatically.
           </p>
 
-          {/* Interactive Focused Search Input */}
+          {/* Centric Search Bar with Focus Effects */}
           <div className="relative max-w-xl mx-auto group">
             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl blur opacity-15 group-focus-within:opacity-35 transition duration-300" />
             <div className="relative flex items-center bg-[#111] rounded-xl border border-white/10 group-focus-within:border-cyan-400/50 transition-all duration-300 overflow-hidden">
@@ -465,37 +412,31 @@ export default function App() {
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search micro-services or paste contract address..."
+                placeholder="Search micro-services or enter contract address..."
                 className="w-full bg-transparent border-none outline-none py-4 px-3 text-sm text-white placeholder-gray-500 font-sans"
               />
               {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="pr-4 text-gray-500 hover:text-white"
-                >
+                <button onClick={() => setSearchQuery('')} className="pr-4 text-gray-500 hover:text-white">
                   <X size={16} />
                 </button>
               )}
             </div>
             
-            {/* Quick Suggestions / Address Mode Hint */}
+            {/* Quick Hints */}
             <div className="mt-3 flex justify-between items-center text-[11px] text-gray-500 px-1">
               <div className="flex gap-2">
-                <span>Try:</span>
+                <span>Suggestions:</span>
                 <button onClick={() => setSearchQuery('Solana Risk Scanner')} className="text-gray-400 hover:text-cyan-400 transition-colors">Risk Scanner</button>
                 <span className="text-gray-700">•</span>
                 <button onClick={() => setSearchQuery('Sentiment')} className="text-gray-400 hover:text-cyan-400 transition-colors">Sentiment</button>
                 <span className="text-gray-700">•</span>
                 <button onClick={() => setSearchQuery('0x7A3d0E85f2b841e9512c0022fa981e42')} className="text-cyan-400/80 hover:text-cyan-400 transition-colors">EVM Address Mode</button>
               </div>
-              <div>
-                Press run to simulate Query payment
-              </div>
             </div>
           </div>
         </div>
 
-        {/* CATEGORY TABS */}
+        {/* TABS & CONTROLS */}
         <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-8">
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
             {categories.map(category => (
@@ -518,26 +459,27 @@ export default function App() {
           </div>
         </div>
 
-        {/* CORE WORK: SERVICE GRID */}
+        {/* SERVICE GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {filteredServices.length > 0 ? (
             filteredServices.map(service => {
-              const isCurrentRunning = isRunning && runningServiceId === service.id
+              const isSelected = selectedService.id === service.id
+              const isCurrentRunning = runMutation.isPending && runMutation.variables?.id === service.id
+
               return (
                 <div 
                   key={service.id} 
                   onClick={() => setSelectedService(service)}
                   className={`glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between cursor-pointer transition-all duration-300 relative group overflow-hidden ${
-                    selectedService.id === service.id ? 'border-cyan-400/30 bg-white/[0.03]' : ''
+                    isSelected ? 'border-cyan-400/30 bg-white/[0.03]' : ''
                   }`}
                 >
-                  {/* Subtle active glow for currently selected card */}
-                  {selectedService.id === service.id && (
+                  {isSelected && (
                     <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400/5 rounded-full blur-2xl pointer-events-none" />
                   )}
 
                   <div>
-                    {/* Header: Status and category */}
+                    {/* Header */}
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-[10px] bg-white/5 border border-white/10 text-gray-400 px-2.5 py-0.5 rounded-full uppercase tracking-wider tech-font">
                         {service.category}
@@ -563,22 +505,17 @@ export default function App() {
                   </div>
 
                   <div>
-                    {/* Cost section */}
+                    {/* Cost */}
                     <div className="flex items-baseline justify-between border-t border-white/5 pt-4 mb-4">
                       <span className="text-gray-500 text-xs">Cost per Query:</span>
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-white tech-font">{service.cost}</span>
-                      </div>
+                      <span className="text-sm font-bold text-white tech-font">{service.cost}</span>
                     </div>
 
-                    {/* Quick copy, Run actions */}
+                    {/* Actions */}
                     <div className="grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
-                      
-                      {/* Copy endpoint */}
                       <button
                         onClick={() => handleCopyEndpoint(service.endpoint, service.id)}
                         className="flex items-center justify-center gap-2 bg-[#121212] hover:bg-[#181818] text-gray-300 hover:text-white border border-white/10 py-2 px-3 rounded-xl text-xs font-semibold transition-all duration-200"
-                        title="Copy endpoint URL to clipboard"
                       >
                         {copiedTextId === service.id ? (
                           <>
@@ -588,21 +525,20 @@ export default function App() {
                         ) : (
                           <>
                             <Copy size={13} />
-                            <span>Endpoint</span>
+                            <span>Copy Endpoint</span>
                           </>
                         )}
                       </button>
 
-                      {/* Run simulator button */}
                       <button
-                        disabled={isRunning}
-                        onClick={() => runServiceQuery(service)}
+                        disabled={runMutation.isPending}
+                        onClick={() => runMutation.mutate(service)}
                         className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                           isCurrentRunning 
                             ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
-                            : isRunning
+                            : runMutation.isPending
                             ? 'bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed'
-                            : 'bg-white/5 hover:bg-cyan-400 hover:text-black border border-white/10 hover:border-cyan-400 text-white shadow-sm'
+                            : 'bg-white/5 hover:bg-cyan-400 hover:text-black border border-white/10 hover:border-cyan-400 text-white'
                         }`}
                       >
                         {isCurrentRunning ? (
@@ -613,7 +549,7 @@ export default function App() {
                         ) : (
                           <>
                             <Play size={11} className="fill-current" />
-                            <span>Run Query</span>
+                            <span>Run Service</span>
                           </>
                         )}
                       </button>
@@ -626,91 +562,32 @@ export default function App() {
             <div className="col-span-full py-12 text-center bg-[#111] rounded-2xl border border-white/5">
               <AlertTriangle className="mx-auto text-yellow-500/80 mb-3" size={32} />
               <h4 className="text-white font-semibold text-sm mb-1">No micro-services found</h4>
-              <p className="text-gray-500 text-xs max-w-sm mx-auto">
-                No services matched "{searchQuery}". Try modifying your search or check EVM Contract Address formatting.
-              </p>
+              <p className="text-gray-500 text-xs max-w-sm mx-auto">No services matched your query.</p>
             </div>
           )}
         </div>
 
-        {/* BOTTOM TWO-COLUMN: DEVELOPER CONSOLE & INTERACTIVE TERMINAL OUTPUT */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        {/* DEVELOPER CODE BLOCK & STATIC TRANS-ECONOMICS COLUMNS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch mb-20">
           
-          {/* COLUMN 1: INTERACTIVE RUN TERMINAL/MOCK LOG PANEL */}
-          <div className="glass-panel rounded-2xl border border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl h-[450px]">
-            
-            {/* Terminal Header */}
-            <div className="bg-[#111] px-5 py-3 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-                <span className="text-xs text-gray-400 font-medium ml-2 tech-font">querygate-terminal-simulation</span>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] text-cyan-400 font-bold uppercase bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">
-                <Terminal size={11} />
-                Live Engine Feed
-              </div>
-            </div>
-
-            {/* Terminal Logs Area */}
-            <div className="flex-1 bg-[#060606] p-5 font-mono text-[11px] md:text-xs overflow-y-auto leading-relaxed flex flex-col gap-2 scrollbar-thin">
-              {terminalLogs.map((log, index) => {
-                let textClass = 'text-gray-400'
-                if (log.type === 'cmd') textClass = 'text-cyan-400 font-semibold'
-                else if (log.type === 'sys') textClass = 'text-gray-500'
-                else if (log.type === 'info') textClass = 'text-blue-400'
-                else if (log.type === 'tx') textClass = 'text-emerald-400 font-medium'
-                else if (log.type === 'warning') textClass = 'text-amber-500'
-                else if (log.type === 'success') textClass = 'text-emerald-300 font-bold'
-
-                return (
-                  <div key={index} className="break-all">
-                    {log.isJson ? (
-                      <div className="mt-1 bg-white/[0.02] border border-white/5 rounded-lg p-3 text-gray-300 max-w-full overflow-x-auto tech-font">
-                        <pre className="text-[11px] leading-relaxed">{JSON.stringify(log.data, null, 2)}</pre>
-                      </div>
-                    ) : (
-                      <span className={textClass}>{log.text}</span>
-                    )}
-                  </div>
-                )
-              })}
-              <div ref={terminalEndRef} />
-            </div>
-
-            {/* Terminal Footer */}
-            <div className="bg-[#111] p-3 border-t border-white/5 text-[10px] text-gray-500 flex justify-between items-center">
-              <span>Host IP: 184.21.90.4 • Powered by x402 Micropayments</span>
-              <div className="flex items-center gap-1 text-cyan-500">
-                <span>Fee Take-Rate: 2.5%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* COLUMN 2: DEVELOPER CONSOLE & cURL TOOL */}
-          <div className="glass-panel rounded-2xl border border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl h-[450px]">
-            
-            {/* Console Header with tabs */}
+          {/* COLUMN 1: Developer Console & cURL Generator */}
+          <div className="glass-panel rounded-2xl border border-white/10 flex flex-col justify-between overflow-hidden shadow-2xl h-[420px]">
             <div className="bg-[#111] px-5 py-3 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Code size={14} className="text-cyan-400" />
                 <span className="text-xs text-white font-semibold uppercase tracking-wider tech-font">Developer Integration Console</span>
               </div>
               <span className="text-[10px] text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded uppercase font-medium">
-                Active Service: {selectedService.name}
+                Service: {selectedService.name}
               </span>
             </div>
 
-            {/* Console Body */}
             <div className="p-5 flex-1 flex flex-col justify-between bg-[#080808]">
-              
               <div>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Querygate utilizes direct decentralized token handshakes. To construct queries, inject your custom <code className="text-cyan-400 text-[11px] bg-cyan-950/30 px-1 py-0.5 rounded border border-cyan-800/20">X-x402-Payment-Token</code> in headers. All fees are compiled sub-second.
+                  Querygate utilizes direct decentralized token handshakes. To construct queries, inject your custom <code className="text-cyan-400 text-[11px] bg-cyan-950/30 px-1 py-0.5 rounded border border-cyan-800/20">X-x402-Payment-Token</code> in headers.
                 </p>
 
-                {/* Token configurator slider or input */}
                 <div className="mb-4 bg-white/[0.02] border border-white/5 rounded-xl p-3 flex flex-col md:flex-row gap-3 items-center justify-between">
                   <div className="text-left w-full md:w-auto">
                     <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wide">Configure Micro-payment Key:</span>
@@ -729,13 +606,11 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* cURL Display Pane */}
                 <div className="relative">
                   <div className="absolute top-2 right-2 flex gap-2">
                     <button
                       onClick={() => handleCopyEndpoint(selectedService.curlCommand(userPaymentToken, searchQuery), 'curl-copy')}
                       className="bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white p-1.5 rounded-lg border border-white/10 transition-all duration-200"
-                      title="Copy cURL command"
                     >
                       {copiedTextId === 'curl-copy' ? (
                         <Check size={13} className="text-emerald-400" />
@@ -744,7 +619,7 @@ export default function App() {
                       )}
                     </button>
                   </div>
-                  <div className="bg-black/80 rounded-xl border border-white/10 p-4 font-mono text-[11px] md:text-xs text-[#E5E7EB] overflow-x-auto h-[180px] leading-relaxed max-w-full">
+                  <div className="bg-black/80 rounded-xl border border-white/10 p-4 font-mono text-[11px] md:text-xs text-[#E5E7EB] overflow-x-auto h-[160px] leading-relaxed max-w-full">
                     <pre className="text-left text-cyan-300/90 select-all font-mono whitespace-pre-wrap">
                       {selectedService.curlCommand(userPaymentToken, searchQuery)}
                     </pre>
@@ -752,75 +627,422 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Console Footer */}
               <div className="flex justify-between items-center text-[10px] text-gray-500 border-t border-white/5 pt-3">
                 <span className="flex items-center gap-1">
-                  <Globe size={11} /> SDKs available: Javascript, Rust, Python
+                  <Globe size={11} /> SDKs: Javascript, Rust, Python
                 </span>
                 <span className="text-cyan-400 font-semibold cursor-pointer hover:underline flex items-center gap-0.5">
-                  Read Protocol Docs <ArrowRight size={10} />
+                  Read Protocol Specs <ArrowRight size={10} />
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* COLUMN 2: Protocol Take-Rate & Token Architecture Specs */}
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-cyan-400 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-cyan-950/40 border border-cyan-800/30 flex items-center justify-center">
+                  <Coins size={16} />
+                </div>
+                <span className="text-sm font-bold uppercase tracking-wider tech-font text-white">Direct Micropayment Specifications</span>
+              </div>
+              <h4 className="text-white font-bold text-base mb-2">Protocol Fee Structure</h4>
+              <p className="text-xs text-gray-400 leading-relaxed mb-6">
+                Querygate processed queries leverage direct decentralized token handshakes under the x402 payment scheme. High-velocity workloads route standard <strong className="text-cyan-400">2.5% protocol take-rate</strong> cuts straight to decentralized treasury pools, preventing subscription leakage or heavy vendor lock-ins.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/[0.02] border border-white/5 p-3.5 rounded-xl">
+                  <span className="text-[10px] text-gray-500 block uppercase font-semibold">Decentralized Protocol Take-rate</span>
+                  <span className="text-lg font-bold text-white tech-font">2.50%</span>
+                </div>
+                <div className="bg-white/[0.02] border border-white/5 p-3.5 rounded-xl">
+                  <span className="text-[10px] text-gray-500 block uppercase font-semibold">Average Query Settlement Delay</span>
+                  <span className="text-lg font-bold text-cyan-400 tech-font">&lt; 15ms</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center text-[10px] text-gray-500 border-t border-white/5 pt-4">
+              <span>SLA guarantees available for enterprise delegates</span>
+              <a href="#" className="text-cyan-400 hover:underline">Enterprise Relays &rarr;</a>
             </div>
           </div>
         </div>
 
-        {/* REVENUE MODEL & ARCHITECTURE TRANSPARENCY SECTION */}
-        <section className="mt-24 border-t border-white/5 pt-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      </main>
+
+      {/* OVERLAY PROCESS VIEW & VISUAL TERMINAL (DRAWER PANEL) */}
+      <AnimatePresence>
+        {showProcessView && (
+          <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm">
             
-            {/* Revenue / Fee model Card */}
-            <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-800/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Coins size={20} />
-                </div>
-                <h4 className="text-white font-bold text-base mb-2">Protocol Take-Rate</h4>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Querygate levies an ultra-low, standard <strong className="text-cyan-400">2.5% protocol fee</strong> on all successful micropayments processed via the x402 specification. Route fees in real-time instantly without locks.
-                </p>
-              </div>
-              <div className="mt-6">
-                <span className="text-[10px] text-cyan-400 font-extrabold uppercase bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">Transparent Economics</span>
-              </div>
-            </div>
+            {/* Click outside to close (disabled while active/running logs) */}
+            <div 
+              onClick={() => {
+                if (!runMutation.isPending) {
+                  setShowProcessView(false)
+                  setShowResultsDashboard(false)
+                }
+              }} 
+              className="absolute inset-0 cursor-pointer" 
+            />
 
-            {/* Enterprise Hosting & Relay Card */}
-            <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-800/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Layers size={20} />
+            {/* Slide-over process panel drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-2xl bg-[#090909] border-l border-white/10 shadow-2xl h-screen flex flex-col justify-between overflow-hidden"
+            >
+              
+              {/* Drawer Header */}
+              <div className="bg-[#111] px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="text-cyan-400 animate-pulse" size={16} />
+                  <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider tech-font">
+                      Process View | Querygate CLI Engine
+                    </h3>
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      Executing query for: <strong className="text-cyan-400">{runMutation.variables?.name}</strong>
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-white font-bold text-base mb-2">Enterprise Hosting & Relay</h4>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Unlock specialized dedicated relays, customized service level agreements (SLAs), and optimized rate limit configurations. Built specifically for high-velocity decentralized workloads.
-                </p>
+                
+                <button 
+                  disabled={runMutation.isPending}
+                  onClick={() => {
+                    setShowProcessView(false)
+                    setShowResultsDashboard(false)
+                  }}
+                  className={`text-gray-400 hover:text-white transition-colors duration-150 p-1.5 rounded-lg border border-transparent ${
+                    runMutation.isPending ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/5 hover:border-white/10'
+                  }`}
+                >
+                  <X size={16} />
+                </button>
               </div>
-              <div className="mt-6">
-                <span className="text-[10px] text-cyan-400 font-extrabold uppercase bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">Enterprise Ready</span>
-              </div>
-            </div>
 
-            {/* Premium Verification Card */}
-            <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-800/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Shield size={20} />
+              {/* Drawer Content Body */}
+              <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
+                
+                {/* Visual Terminal */}
+                <div className="bg-[#050608] rounded-xl border border-white/10 p-5 flex-1 flex flex-col justify-between shadow-inner h-[280px]">
+                  
+                  {/* Terminal Header */}
+                  <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                      <span className="text-[10px] text-gray-500 font-medium ml-2 tech-font">querygate-live-feed</span>
+                    </div>
+                    <span className="text-[10px] text-cyan-400/80 uppercase tracking-widest tech-font flex items-center gap-1 font-semibold">
+                      <Terminal size={11} />
+                      Connection Active
+                    </span>
+                  </div>
+
+                  {/* Step by step Terminal output */}
+                  <div className="flex-1 overflow-y-auto flex flex-col gap-2 font-mono text-xs text-gray-300 leading-relaxed scrollbar-thin">
+                    <AnimatePresence>
+                      {terminalLogs.map((log, index) => {
+                        let isSuccessLog = log.startsWith('Validating x402 payment header') || log.startsWith('RESPONSE') || log.startsWith('TX')
+                        let textClass = isSuccessLog ? 'text-emerald-400 font-semibold' : 'text-gray-400'
+
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-start gap-2"
+                          >
+                            <span className="text-cyan-500/50 shrink-0 font-mono select-none">&gt;</span>
+                            <span className={`${textClass} break-all`}>{log}</span>
+                          </motion.div>
+                        )
+                      })}
+                    </AnimatePresence>
+                    <div ref={terminalEndRef} />
+                  </div>
+
+                  {/* Loader or Done Status */}
+                  <div className="border-t border-white/5 pt-3 mt-4 text-[11px] text-gray-500 flex justify-between items-center font-mono">
+                    <div className="flex items-center gap-2">
+                      {runMutation.isPending ? (
+                        <>
+                          <Loader2 className="animate-spin text-cyan-400" size={12} />
+                          <span className="text-cyan-400/80 animate-pulse">Streaming logs...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="text-emerald-400" size={12} />
+                          <span className="text-emerald-400 font-semibold">Telemetry Complete</span>
+                        </>
+                      )}
+                    </div>
+                    <span>USDC micro-settlement success</span>
+                  </div>
+
                 </div>
-                <h4 className="text-white font-bold text-base mb-2">Premium Verification</h4>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Let creators secure the verified safe badge. All listed agents are subject to rigorous safety consensus parameters to avoid malicious payload relays.
-                </p>
+
+                {/* GLOWING SKELETON LOADER ANIMATION */}
+                <AnimatePresence>
+                  {runMutation.isPending && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col gap-4 overflow-hidden"
+                    >
+                      <div className="text-xs text-gray-400 flex items-center gap-2 uppercase tracking-wider font-semibold">
+                        <Loader2 className="animate-spin text-cyan-400" size={14} />
+                        Executing Decentralized Query...
+                      </div>
+                      
+                      <div className="relative overflow-hidden bg-white/[0.02] border border-white/5 rounded-xl p-5 flex flex-col gap-3">
+                        {/* Glow effect slide */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+                        
+                        <div className="h-4 bg-white/5 rounded-lg w-1/3" />
+                        <div className="h-3 bg-white/5 rounded-lg w-3/4" />
+                        <div className="h-3 bg-white/5 rounded-lg w-1/2" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* RESULTS DASHBOARD VIEW once terminal stream completes */}
+                <AnimatePresence>
+                  {showResultsDashboard && runMutation.data && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 30 }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                      className="flex flex-col gap-6"
+                    >
+                      
+                      <div className="border-t border-white/10 pt-4 flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                        <Check className="border border-emerald-400 rounded-full p-0.5" size={14} />
+                        Query execution success • Results generated
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* Risk Analysis Card with Gauge */}
+                        <div className="bg-[#121212] border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider mb-3">Risk Assessment</span>
+                            <div className="flex items-center gap-4">
+                              
+                              {/* Color-coded Gauge */}
+                              <div className="relative w-16 h-16 flex items-center justify-center">
+                                <svg className="w-full h-full transform -rotate-90">
+                                  <circle 
+                                    cx="32" 
+                                    cy="32" 
+                                    r="28" 
+                                    stroke="rgba(255,255,255,0.03)" 
+                                    strokeWidth="6" 
+                                    fill="transparent" 
+                                  />
+                                  <circle 
+                                    cx="32" 
+                                    cy="32" 
+                                    r="28" 
+                                    stroke={
+                                      runMutation.data.riskScore < 20 
+                                        ? '#10B981' 
+                                        : runMutation.data.riskScore < 50 
+                                        ? '#F59E0B' 
+                                        : '#EF4444'
+                                    } 
+                                    strokeWidth="6" 
+                                    fill="transparent" 
+                                    strokeDasharray={2 * Math.PI * 28}
+                                    strokeDashoffset={2 * Math.PI * 28 * (1 - runMutation.data.riskScore / 100)}
+                                    className="transition-all duration-1000 ease-out"
+                                  />
+                                </svg>
+                                <span className="absolute text-xs font-bold tech-font text-white">{runMutation.data.riskScore}%</span>
+                              </div>
+
+                              <div>
+                                <span className={`text-base font-bold tracking-wide uppercase ${runMutation.data.riskColor}`}>
+                                  {runMutation.data.riskLevel}
+                                </span>
+                                <span className="text-[10px] text-gray-500 block mt-0.5">Calculated score out of 100</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 text-[10px] text-gray-500 border-t border-white/5 pt-3 leading-relaxed">
+                            Based on consensus vectors, this query has been fully verified against exploit definitions.
+                          </div>
+                        </div>
+
+                        {/* Cost & Routing summary Card */}
+                        <div className="bg-[#121212] border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider mb-2">Billing Metrics</span>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-lg font-bold text-white tech-font">{runMutation.data.cost}</span>
+                              <span className="text-[10px] text-cyan-400 font-semibold uppercase tracking-wider">x402 Micropayment settled</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-white/[0.01] border border-white/5 p-3 rounded-lg flex items-center justify-between text-[11px] font-mono mt-4">
+                            <span className="text-gray-500">Protocol Fee (2.5%):</span>
+                            <span className="text-gray-300">{(runMutation.data.costNum * 0.025).toFixed(6)} USDC</span>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* Markdown-style AI Analysis Insights section */}
+                      <div className="bg-[#121212] border border-white/5 rounded-xl p-5 text-left">
+                        <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider mb-4">Deep LLM Agent Analysis</span>
+                        
+                        {/* Custom rendered insights style markdown */}
+                        <div className="prose prose-invert max-w-none text-xs leading-relaxed text-gray-300 font-sans flex flex-col gap-4">
+                          
+                          {/* Markdown translation helper mock layout */}
+                          <div className="border-b border-white/5 pb-2">
+                            <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                              <Shield size={14} className="text-cyan-400" />
+                              EXECUTIVE INSIGHTS
+                            </h4>
+                          </div>
+
+                          <div className="space-y-4 font-sans text-gray-300">
+                            {runMutation.data.insights.split('\n\n').map((paragraph, pIdx) => {
+                              if (paragraph.startsWith('###')) {
+                                return <h4 key={pIdx} className="text-sm font-bold text-white pt-2 border-b border-white/5 pb-1">{paragraph.replace('###', '').trim()}</h4>
+                              }
+                              if (paragraph.startsWith('####')) {
+                                return <h5 key={pIdx} className="text-xs font-bold text-cyan-400 pt-1 uppercase tracking-wider">{paragraph.replace('####', '').trim()}</h5>
+                              }
+                              if (paragraph.startsWith('*')) {
+                                return (
+                                  <ul key={pIdx} className="list-disc list-inside space-y-2.5 pl-1">
+                                    {paragraph.split('\n').map((bullet, bIdx) => {
+                                      // Bold markup highlight translation
+                                      const cleanBullet = bullet.replace('*', '').trim()
+                                      const parts = cleanBullet.split('**')
+                                      return (
+                                        <li key={bIdx} className="text-xs text-gray-300">
+                                          {parts.map((part, ptIdx) => ptIdx % 2 === 1 ? <strong key={ptIdx} className="text-white font-semibold">{part}</strong> : part)}
+                                        </li>
+                                      )
+                                    })}
+                                  </ul>
+                                )
+                              }
+                              
+                              // Paragraph bold markup mapping
+                              const parts = paragraph.split('**')
+                              return (
+                                <p key={pIdx} className="text-xs text-gray-400 leading-relaxed">
+                                  {parts.map((part, ptIdx) => ptIdx % 2 === 1 ? <strong key={ptIdx} className="text-white font-semibold">{part}</strong> : part)}
+                                </p>
+                              )
+                            })}
+                          </div>
+
+                        </div>
+                      </div>
+
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
               </div>
-              <div className="mt-6">
-                <span className="text-[10px] text-cyan-400 font-extrabold uppercase bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">Audited Security</span>
+
+              {/* Drawer Footer Actions */}
+              <div className="bg-[#111] p-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-gray-500">
+                <span>Settled via x402 Direct Relays</span>
+                
+                {/* Tech Utility Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    disabled={!showResultsDashboard}
+                    onClick={() => {
+                      if (!runMutation.data) return
+                      const reportJson = JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        serviceId: runMutation.data.id,
+                        serviceName: runMutation.data.name,
+                        riskScore: runMutation.data.riskScore,
+                        riskLevel: runMutation.data.riskLevel,
+                        costSettled: runMutation.data.cost
+                      }, null, 2)
+                      navigator.clipboard.writeText(reportJson)
+                      handleCopyEndpoint(reportJson, 'copy-json-utility')
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold font-sans transition-all cursor-pointer ${
+                      showResultsDashboard 
+                        ? 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-white' 
+                        : 'bg-white/[0.01] border-white/5 text-gray-700 cursor-not-allowed'
+                    }`}
+                  >
+                    {copiedTextId === 'copy-json-utility' ? (
+                      <>
+                        <Check size={12} className="text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileJson size={12} />
+                        <span>Copy JSON</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    disabled={!showResultsDashboard}
+                    onClick={() => {
+                      if (!runMutation.data) return
+                      const reportJson = JSON.stringify({
+                        timestamp: new Date().toISOString(),
+                        serviceId: runMutation.data.id,
+                        serviceName: runMutation.data.name,
+                        riskScore: runMutation.data.riskScore,
+                        riskLevel: runMutation.data.riskLevel,
+                        costSettled: runMutation.data.cost,
+                        recommendation: runMutation.data.riskLevel === 'Safe' ? 'EXCELLENT' : 'MONITOR'
+                      }, null, 2)
+                      const blob = new Blob([reportJson], { type: 'application/json' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `querygate-report-${runMutation.data.id}.json`
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold font-sans transition-all cursor-pointer ${
+                      showResultsDashboard 
+                        ? 'bg-cyan-500 hover:bg-cyan-400 text-black border-cyan-400 shadow-lg' 
+                        : 'bg-white/[0.01] border-white/5 text-gray-700 cursor-not-allowed'
+                    }`}
+                  >
+                    <Download size={12} />
+                    <span>Export Report</span>
+                  </button>
+                </div>
               </div>
-            </div>
+
+            </motion.div>
 
           </div>
-        </section>
-
-      </main>
+        )}
+      </AnimatePresence>
 
       {/* FOOTER */}
       <footer className="border-t border-white/5 bg-[#080808] px-6 py-12 text-center text-xs text-gray-500 mt-20">
@@ -839,117 +1061,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* CONNECT WALLET SIMULATED MODAL */}
-      {walletModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-4">
-          <div className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            
-            {/* Background absolute ambient glow inside modal */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Wallet className="text-cyan-400" size={18} />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider tech-font">Select Crypto Wallet</h3>
-              </div>
-              <button 
-                onClick={() => setWalletModalOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors duration-150"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-400 mb-6 leading-relaxed">
-              Connect your developer wallet to establish a secure link with the Querygate protocol and simulate real-time query payments.
-            </p>
-
-            {/* Wallet Selection List */}
-            <div className="flex flex-col gap-3 mb-6">
-              
-              {/* Phantom */}
-              <button 
-                onClick={() => connectWallet('phantom')}
-                className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-cyan-500/30 p-3.5 rounded-xl text-left transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#512da8]/30 border border-[#512da8]/40 flex items-center justify-center font-bold text-white text-xs tech-font">
-                    P
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-white block">Phantom Wallet</span>
-                    <span className="text-[10px] text-gray-500 block">Recommended for Solana integration</span>
-                  </div>
-                </div>
-                <ChevronRightIcon className="text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all duration-200" size={16} />
-              </button>
-
-              {/* MetaMask */}
-              <button 
-                onClick={() => connectWallet('metamask')}
-                className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-cyan-500/30 p-3.5 rounded-xl text-left transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#e65100]/30 border border-[#e65100]/40 flex items-center justify-center font-bold text-[#f57c00] text-xs tech-font">
-                    M
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-white block">MetaMask</span>
-                    <span className="text-[10px] text-gray-500 block">EVM Compatibility & Arbitrum Spec</span>
-                  </div>
-                </div>
-                <ChevronRightIcon className="text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all duration-200" size={16} />
-              </button>
-
-              {/* WalletConnect */}
-              <button 
-                onClick={() => connectWallet('walletconnect')}
-                className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-cyan-500/30 p-3.5 rounded-xl text-left transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#0288d1]/30 border border-[#0288d1]/40 flex items-center justify-center font-bold text-[#03a9f4] text-xs tech-font">
-                    W
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-white block">WalletConnect</span>
-                    <span className="text-[10px] text-gray-500 block">Universal multi-chain protocol support</span>
-                  </div>
-                </div>
-                <ChevronRightIcon className="text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all duration-200" size={16} />
-              </button>
-
-            </div>
-
-            {/* Disclaimer */}
-            <div className="text-[10px] text-gray-500 text-center leading-relaxed">
-              By connecting a wallet, you agree to the Querygate 2.5% takerate allocation policy. Micropayments in this dashboard are fully simulated sandbox queries.
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </div>
-  )
-}
-
-// Small helper component for Chevron
-function ChevronRightIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
   )
 }
